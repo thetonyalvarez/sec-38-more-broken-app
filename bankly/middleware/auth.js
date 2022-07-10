@@ -31,6 +31,21 @@ function requireAdmin(req, res, next) {
   }
 }
 
+// FIXES Bug #5
+/** Authorization Middleware: Requires user is logged in and is matching user or is staff. */
+
+function requireMatchingUserOrAdmin(req, res, next) {
+  try {
+    if (req.curr_admin || req.curr_username == req.params.username) {
+      return next();
+    } else {
+      return next({ status: 401, message: 'Unauthorized' });
+    }
+  } catch (err) {
+    return next(err);
+  }
+}
+
 /** Authentication Middleware: put user on request
  *
  * If there is a token, verify it, get payload (username/admin),
@@ -62,5 +77,6 @@ function authUser(req, res, next) {
 module.exports = {
   requireLogin,
   requireAdmin,
+  requireMatchingUserOrAdmin,
   authUser
 };

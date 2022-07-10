@@ -90,6 +90,17 @@ describe("POST /auth/login", function() {
     expect(username).toBe("u1");
     expect(admin).toBe(false);
   });
+  
+  // FIXED Bug #1
+  test("should throw 401 if incorrect username/password", async function() {
+    const response = await request(app)
+      .post("/auth/login")
+      .send({
+        username: "u1",
+        password: "pwd2"
+      });
+    expect(response.statusCode).toEqual(401)
+  });
 });
 
 describe("GET /users", function() {
@@ -104,6 +115,9 @@ describe("GET /users", function() {
       .send({ _token: tokens.u1 });
     expect(response.statusCode).toBe(200);
     expect(response.body.users.length).toBe(3);
+    // TESTS Bug #2
+    expect(response.body.users[0].email).toBeNull
+    expect(response.body.users[0].phone).toBeNull
   });
 });
 
@@ -126,6 +140,14 @@ describe("GET /users/[username]", function() {
       phone: "phone1"
     });
   });
+
+  // TESTS Bug #3
+  test("should return 404 if user doesn't exist", async function() {
+    const response = await request(app)
+      .get("/users/u99")
+      .send({ _token: tokens.u1 });
+    expect(response.statusCode).toBe(404);
+  });
 });
 
 describe("PATCH /users/[username]", function() {
@@ -141,14 +163,41 @@ describe("PATCH /users/[username]", function() {
     expect(response.statusCode).toBe(401);
   });
 
+  // TESTS Bug #4
   test("should patch data if admin", async function() {
     const response = await request(app)
       .patch("/users/u1")
-      .send({ _token: tokens.u3, first_name: "new-fn1" }); // u3 is admin
+      .send({ 
+        _token: tokens.u3, 
+        first_name: "new-fn1",
+        last_name: "new-ln1",
+        email: "new-email1",
+        phone: "new-phone1"
+      }); // u3 is admin
     expect(response.statusCode).toBe(200);
     expect(response.body.user).toEqual({
       username: "u1",
       first_name: "new-fn1",
+      last_name: "new-ln1",
+      email: "new-email1",
+      phone: "new-phone1",
+      admin: false,
+      password: expect.any(String)
+    });
+  });
+
+  // TESTS Bug #5
+  test("should patch data if matching user", async function() {
+    const response = await request(app)
+      .patch("/users/u1")
+      .send({ 
+        _token: tokens.u1, 
+        first_name: "new-fn2",
+      }); // u3 is admin
+    expect(response.statusCode).toBe(200);
+    expect(response.body.user).toEqual({
+      username: "u1",
+      first_name: "new-fn2",
       last_name: "ln1",
       email: "email1",
       phone: "phone1",
@@ -157,11 +206,23 @@ describe("PATCH /users/[username]", function() {
     });
   });
 
+  // TESTS Bug #6
   test("should disallowing patching not-allowed-fields", async function() {
     const response = await request(app)
       .patch("/users/u1")
       .send({ _token: tokens.u1, admin: true });
     expect(response.statusCode).toBe(401);
+  });
+
+  test("should return 401 if nonexistent field is passed", async function() {
+    const response = await request(app)
+      .patch("/users/u1")
+      .send({ 
+        _token: tokens.u3, 
+        first_name: "new-fn1",
+        non_existing_field: "nothing"
+      }); // u3 is admin 
+      expect(response.statusCode).toBe(401);
   });
 
   test("should return 404 if cannot find", async function() {
@@ -191,6 +252,14 @@ describe("DELETE /users/[username]", function() {
       .send({ _token: tokens.u3 }); // u3 is admin
     expect(response.statusCode).toBe(200);
     expect(response.body).toEqual({ message: "deleted" });
+  });
+
+  // TESTS Bug #7
+  test("should return 404 if user not found", async function() {
+    const response = await request(app)
+      .delete("/users/user-not-found")
+      .send({ _token: tokens.u3 }); // u3 is admin
+    expect(response.statusCode).toBe(404);
   });
 });
 
