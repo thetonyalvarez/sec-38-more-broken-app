@@ -9,7 +9,7 @@ function requireLogin(req, res, next) {
   try {
 
     // FIXES Bug #8
-    if (!res.locals.user) throw new UnauthorizedError("Unauthorized", 401);
+    if (!res.locals.user) return next({ status: 401, message: 'Unauthorized' });
     return next();
   } catch (err) {
     return next(err);
@@ -20,7 +20,8 @@ function requireLogin(req, res, next) {
 
 function requireAdmin(req, res, next) {
   try {
-    if (!res.locals.user || !res.locals.user.admin) throw new UnauthorizedError("Unauthorized", 401);
+    if (!res.locals.user || !res.locals.user.admin) return next({ status: 401, message: 'Unauthorized' });
+    return next()
   } catch (err) {
     return next(err);
   }
@@ -34,9 +35,7 @@ function requireMatchingUserOrAdmin(req, res, next) {
   let reqUser = req.params.username
   let currUser = res.locals.user
   try {
-    if (!(currUser && (currUser.isAdmin || reqUser == currUser.username))) {
-      throw new UnauthorizedError("Unauthorized", 401)
-    } 
+    if (!(currUser && (currUser.admin || reqUser == currUser.username))) return next({ status: 401, message: 'Unauthorized' });
     return next();
   } catch (err) {
     return next(err);
@@ -64,7 +63,6 @@ function authUser(req, res, next) {
     if (authHeader) {
       const token = authHeader.replace(/^[Bb]earer /, "").trim();
       res.locals.user = jwt.verify(token, SECRET_KEY);
-      console.log(res.locals.user)
     }
 
     return next();
