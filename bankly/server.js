@@ -1,8 +1,8 @@
-/** Server for bank.ly. */
-
+"use strict";
 
 const app = require("./app");
+const { PORT } = require("./config");
 
-app.listen(3000, () => {
-  console.log(`Server starting on port 3000`);
+app.listen(PORT, function () {
+  console.log(`Started on http://localhost:${PORT}`);
 });
