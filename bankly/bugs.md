@@ -21,3 +21,7 @@
 ### Bug #7:
 `__tests__/routes.test.js`
 - Test does not check if 404 returned if user not found
+
+### Bug #8:
+`routes/auth.js`
+- User is not authorized with valid token
